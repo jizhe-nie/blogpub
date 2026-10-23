@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blogpub"
+version = "0.1.0"
+description = "Turn rough notes and images into a polished Hexo blog post with an LLM, preview it, and publish with one command."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+  "requests>=2.28",
+  "PyYAML>=6.0",
+  "Pillow>=9.0",
+]
+
+[project.optional-dependencies]
+heic = ["pillow-heif>=0.13"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+blogpub = "blogpub.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

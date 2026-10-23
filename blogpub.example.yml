@@ -1,0 +1,24 @@
+# blogpub configuration. Copy to your blog folder as blogpub.yml.
+# API keys are NEVER stored here: export them as environment variables (see `blogpub providers`).
+
+blog_dir: .                 # the Hexo project (folder with _config.yml and source/)
+languages: [zh, en]         # first = language of your notes; use [en] for a single-language blog
+
+provider: openai            # openai | anthropic | deepseek | kimi | qwen | ollama | custom
+# model: gpt-4o             # override the preset's default model name
+# base_url: https://...     # only needed for `custom`, or a proxy
+# vision: true              # send your images to the model (only for models that can see)
+
+# style_notes: |
+#   Write in a relaxed first-person tone. Explain why, not only how.
+# style_file: style.md
+
+# commit_message: "New post: {title}"
+# slug_suffix: "-{lang}"    # file name suffix for the non-primary language versions
+# front_matter:             # fields used to pair the translations of one post
+#   lang_field: post_lang
+#   translation_field: translation
+# images:
+#   dir: images/posts       # under source/
+#   max_width: 1600
+#   quality: 85
