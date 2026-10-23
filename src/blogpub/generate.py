@@ -13,8 +13,11 @@ SYSTEM_PROMPT = """You are an editor for a personal technical blog. The author g
 (and sometimes images). Turn them into a clear, well-structured blog post that sounds like the author.
 
 Rules:
-- Stay faithful to the notes. Never invent facts, numbers, commands, versions, results or experiences. \
+- Stay faithful to the notes. Never invent facts, numbers, commands, versions, results, reasons, opinions or experiences. \
 If something important is missing, leave it out or add an HTML comment such as <!-- TODO: add the exact version -->.
+- Length must be proportional to the notes. If the notes are only a sentence or two, write one or two short paragraphs. \
+Do NOT pad the post with tutorial steps, commands, motivations, background or conclusions that the notes do not contain, \
+even if they seem obvious or typical. A short, accurate post is better than a long, partly invented one.
 - Keep code, commands, file paths and config snippets exactly as given, inside fenced code blocks with a language tag.
 - Never output secrets. If the notes contain a key, token, password, private IP or personal address, \
 replace it with a clear placeholder such as <your-api-key> and mention nothing else about it.
@@ -181,3 +184,13 @@ def generate(provider: Provider, user_prompt: str, languages: List[str], image_n
             prompt = (user_prompt + f"\n\nYour previous reply was rejected: {last}.\n"
                       "Reply again with ONLY the corrected JSON object.")
     raise GenerationError(f"The model's reply was unusable after {retries + 1} attempts: {last}")
+
+
+def expansion_warning(notes: str, body: str) -> Optional[str]:
+    """The model is told not to invent things, but a very short note still tempts it to pad the post.
+    A body much longer than the notes is the tell-tale sign, so ask the author to check it."""
+    n, b = len(notes.strip()), len(body.strip())
+    if b > 500 and b > 4 * n:
+        return (f"the post is about {b // max(n, 1)}x longer than your notes ({b} vs {n} characters), so the model "
+                "may have added details you did not write. Read it carefully, and give more detailed notes next time.")
+    return None

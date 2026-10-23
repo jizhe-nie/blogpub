@@ -123,3 +123,15 @@ def test_date_is_written_unquoted_like_hexo_templates(tmp_path):
     spec = validate(good(), ["zh", "en"], [])
     text = render_files(spec, ["zh", "en"], cfg, now=datetime(2026, 10, 23, 9, 5, 7))["my-post.md"]
     assert "\ndate: 2026-10-23 09:05:07\n" in text and "'" not in text.split("---")[1]
+
+
+def test_expansion_warning_flags_padded_posts_only():
+    from blogpub.generate import expansion_warning
+    assert expansion_warning("short note of fifty characters or so, give or take", "x" * 900) is not None
+    assert expansion_warning("a" * 400, "x" * 900) is None          # proportionate
+    assert expansion_warning("tiny", "x" * 300) is None             # short posts are never flagged
+
+
+def test_system_prompt_forbids_padding():
+    from blogpub.generate import SYSTEM_PROMPT
+    assert "Length must be proportional" in SYSTEM_PROMPT and "Do NOT pad" in SYSTEM_PROMPT

@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from . import __version__, gitops, images as imglib, safety, timeline
 from .blog import Blog, BlogError, split_front_matter
 from .config import ConfigError, load_config
-from .generate import GenerationError, build_user_prompt, generate
+from .generate import GenerationError, build_user_prompt, expansion_warning, generate
 from .providers import PRESETS, ProviderError, make_provider
 from .render import render_files
 
@@ -170,7 +170,13 @@ def cmd_new(args: argparse.Namespace) -> int:
         if taken:
             raise die(f"a post or draft named '{spec.slug}' already exists ({taken.name}); use --slug to choose another")
 
+        warn = expansion_warning(notes, spec.posts[languages[0]]["body"])
+        if warn:
+            spec.warnings.append(warn)
         files = render_files(spec, languages, cfg)
+        todos = sum(text.count("TODO") for text in files.values())
+        if todos:
+            spec.warnings.append(f"the model left {todos} TODO marker(s) where it lacked information; search for TODO in the draft and fill them in or remove them")
         final = "\n".join(files.values())
         post_findings = safety.scan(final)
 
