@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .providers import Image, Provider
 
@@ -24,7 +24,7 @@ replace it with a clear placeholder such as <your-api-key> and mention nothing e
 - Images: every provided image must appear in the body exactly once, written as `![alt text](IMG:filename)` \
 using the exact file name from the IMAGES list, placed where it fits the story. Write alt text in the language of that version. \
 Never reference any image that is not in the list.
-- Categories: at most one, reuse an existing category when it fits. Tags: 2 to 6, reuse existing tags when they fit.
+- Categories: at most one, reuse an existing category of the SAME language version when it fits (names are listed per language). Tags: 2 to 6, reuse existing tags of the same language when they fit.
 - If several languages are requested, write each version natively (not word-for-word) but keep the same facts, \
 structure and code. All versions must be complete.
 - `slug` is a short lowercase ASCII, hyphen-separated identifier for the URL.
@@ -61,14 +61,16 @@ def slugify(text: str) -> str:
     return s[:60].strip("-")
 
 
-def build_user_prompt(notes: str, languages: List[str], image_names: List[str], categories: List[str],
-                      tags: List[str], recent_titles: List[str], style_notes: str,
+def build_user_prompt(notes: str, languages: List[str], image_names: List[str],
+                      taxonomy: Dict[str, Tuple[List[str], List[str]]], recent_titles: List[str], style_notes: str,
                       title_hint: Optional[str], category_hint: Optional[str],
                       tags_hint: Optional[List[str]]) -> str:
     lines = [f"LANGUAGES: {', '.join(languages)}",
-             f"PRIMARY LANGUAGE: {languages[0]} (the notes are written in this language unless they clearly are not)",
-             f"EXISTING CATEGORIES: {', '.join(categories) or '(none yet)'}",
-             f"EXISTING TAGS: {', '.join(tags) or '(none yet)'}"]
+             f"PRIMARY LANGUAGE: {languages[0]} (the notes are written in this language unless they clearly are not)"]
+    for lang in languages:
+        cats, tags = taxonomy.get(lang, ([], []))
+        lines.append(f"EXISTING CATEGORIES [{lang}]: {', '.join(cats) or '(none yet)'}")
+        lines.append(f"EXISTING TAGS [{lang}]: {', '.join(tags) or '(none yet)'}")
     if recent_titles:
         lines.append("RECENT POSTS (for tone, and to avoid repeating them):")
         lines += [f"- {t}" for t in recent_titles]

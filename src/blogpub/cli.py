@@ -140,12 +140,12 @@ def cmd_new(args: argparse.Namespace) -> int:
             print(f"Note: {provider.name} is not set up for vision, so the images are listed by file name only. "
                   "Describe them in your notes (e.g. 'build.png shows the green check') so they are placed well.")
 
-        categories, tags = blog.taxonomy()
+        taxonomy = blog.taxonomy_by_language(cfg["front_matter"]["lang_field"], languages)
         style = cfg.get("style_notes") or ""
         if cfg.get("style_file"):
             style += "\n" + Path(cfg["style_file"]).expanduser().read_text(encoding="utf-8")
         prompt = build_user_prompt(
-            notes, languages, names, categories, tags, blog.recent_titles(int(cfg["context_posts"])), style,
+            notes, languages, names, taxonomy, blog.recent_titles(int(cfg["context_posts"])), style,
             args.title, args.category, [t.strip() for t in args.tags.split(",")] if args.tags else None)
 
         print(f"Sending {len(notes)} characters of notes and {len(send_images)} image(s) to "

@@ -114,3 +114,14 @@ def test_dry_run_writes_nothing(blog, tmp_path, capsys):
     assert run(["new", str(notes), "--blog", str(blog), "--provider", "mock", "-y", "--dry-run"]) == 0
     assert not (blog / "source" / "_drafts").exists()
     assert "--dry-run" in capsys.readouterr().out
+
+
+def test_taxonomy_is_listed_per_language_so_english_posts_get_english_names(blog):
+    post = blog / "source" / "_posts" / "old-en.md"
+    post.write_text("---\ntitle: Old EN\npost_lang: en\ncategories:\n  - Dev Notes\ntags:\n  - Deep Learning\n---\n\nhi\n", encoding="utf-8")
+    zh = blog / "source" / "_posts" / "old-zh.md"
+    zh.write_text("---\ntitle: 旧文章\npost_lang: zh\ncategories:\n  - 开发笔记\ntags:\n  - 深度学习\n---\n\n你好\n", encoding="utf-8")
+    tax = Blog(str(blog)).taxonomy_by_language("post_lang", ["zh", "en"])
+    assert tax["en"] == (["Dev Notes"], ["Deep Learning"])
+    # old.md has no language field: it counts for the primary language (zh)
+    assert "开发笔记" in tax["zh"][0] and "Dev Notes" in tax["zh"][0] and "Dev Notes" not in tax["en"][0][1:]

@@ -72,9 +72,12 @@ def test_generate_gives_up_after_retry():
 
 
 def test_prompt_contains_all_sections():
-    prompt = build_user_prompt("my notes here", ["zh", "en"], ["01-a.png"], ["Dev"], ["Hexo"], ["Old"],
+    prompt = build_user_prompt("my notes here", ["zh", "en"], ["01-a.png"],
+                               {"zh": (["开发笔记"], ["Hexo"]), "en": (["Dev Notes"], [])}, ["Old"],
                                "be casual", "Hint", "Dev", ["x"])
-    for needle in ("LANGUAGES: zh, en", "<<<IMAGES", "- 01-a.png", "<<<NOTES", "my notes here", "EXISTING TAGS: Hexo", "be casual"):
+    for needle in ("LANGUAGES: zh, en", "<<<IMAGES", "- 01-a.png", "<<<NOTES", "my notes here",
+                   "EXISTING CATEGORIES [zh]: 开发笔记", "EXISTING CATEGORIES [en]: Dev Notes",
+                   "EXISTING TAGS [zh]: Hexo", "EXISTING TAGS [en]: (none yet)", "be casual"):
         assert needle in prompt
 
 

@@ -73,6 +73,23 @@ class Blog:
         order = lambda d: [k for k, _ in sorted(d.items(), key=lambda kv: (-kv[1], kv[0]))]
         return order(cats), order(tags)
 
+    def taxonomy_by_language(self, lang_field: str, languages: List[str]) -> Dict[str, Tuple[List[str], List[str]]]:
+        """Existing categories and tags per language, so an English post is offered English names.
+
+        Posts without a language field count for the first (primary) language."""
+        cats: Dict[str, Dict[str, int]] = {l: {} for l in languages}
+        tags: Dict[str, Dict[str, int]] = {l: {} for l in languages}
+        for _, fm in self._front_matters(self.posts_dir):
+            lang = str(fm.get(lang_field) or languages[0])
+            if lang not in cats:
+                continue
+            for c in _as_list(fm.get("categories")):
+                cats[lang][c] = cats[lang].get(c, 0) + 1
+            for t in _as_list(fm.get("tags")):
+                tags[lang][t] = tags[lang].get(t, 0) + 1
+        order = lambda d: [k for k, _ in sorted(d.items(), key=lambda kv: (-kv[1], kv[0]))]
+        return {l: (order(cats[l]), order(tags[l])) for l in languages}
+
     def recent_titles(self, n: int) -> List[str]:
         items = [(str(fm.get("date", "")), str(fm.get("title", ""))) for _, fm in self._front_matters(self.posts_dir)]
         return [t for _, t in sorted(items, reverse=True)[:n] if t]
