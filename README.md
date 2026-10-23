@@ -65,6 +65,16 @@ Give images with `-i` (files or folders). blogpub shrinks them (default max widt
 
 With `languages: [zh, en]` the first language is the one your notes are written in. blogpub writes `my-post.md` and `my-post-en.md` and links them with two front-matter fields (`post_lang` and `translation`, configurable under `front_matter:`). What your theme does with those fields is up to you. Use `languages: [en]` for a normal single-language blog; no pairing fields are written then.
 
+## Build timeline (optional)
+
+If your blog keeps a "how this site was built" timeline, blogpub can record every post it publishes there. Set
+
+```yaml
+timeline_notes: source/_data/timeline-notes.yml
+```
+
+and `blogpub publish` appends an entry keyed `post:<slug>` (tag `content`, the post titles, and the intro of each language version) to that YAML file **in the same commit as the post**. The key is the post's slug rather than a commit hash, because the hash does not exist yet when the entry is written; your timeline just needs to match `post:<slug>` to the commit that added `source/_posts/<slug>.md`. Existing content and comments in the file are left untouched, and running it twice never duplicates an entry. This is off by default. Adjust `timeline_tags` and `timeline_title_prefix` to taste.
+
 ## Configuration
 
 See [`blogpub.example.yml`](blogpub.example.yml). Command line flags override the file. Useful extras: `style_notes` / `style_file` (your tone, rules), `commit_message`, `images.max_width`, `slug_suffix`.
@@ -153,6 +163,16 @@ blogpub publish my-post                   # 移到 _posts，提交并推送
 ## 双语文章
 
 设置 `languages: [zh, en]` 时，第一个语言就是你写笔记用的语言。工具会生成 `my-post.md` 和 `my-post-en.md`，并用两个 front-matter 字段（`post_lang` 和 `translation`，可在 `front_matter:` 下改名）把它们关联起来；主题怎么使用这两个字段由你决定。普通单语博客设置 `languages: [en]`（或 `[zh]`）即可，此时不会写入配对字段。
+
+## 建站时间线（可选）
+
+如果你的博客有一个"网站是怎么搭起来的"时间线，blogpub 可以把每篇发布的文章也记录进去。在配置里设置：
+
+```yaml
+timeline_notes: source/_data/timeline-notes.yml
+```
+
+之后 `blogpub publish` 会往这个 YAML 文件追加一条键为 `post:<slug>` 的记录（标签 `content`、各语言版本的标题和开头摘要），并且**和文章放在同一个提交里**。键用文章的 slug 而不是提交哈希，是因为写入记录时提交还没产生，哈希不存在；你的时间线只需要把 `post:<slug>` 对应到"新增了 `source/_posts/<slug>.md` 的那次提交"即可。文件里已有的内容和注释都不会被改动，重复运行也不会产生重复记录。默认关闭，可以用 `timeline_tags` 和 `timeline_title_prefix` 调整标签和标题前缀。
 
 ## 会发送给模型服务商的内容
 

@@ -14,6 +14,8 @@ provider: openai            # openai | anthropic | deepseek | kimi | qwen | olla
 # style_file: style.md
 
 # commit_message: "New post: {title}"
+# timeline_notes: source/_data/timeline-notes.yml   # also record each published post here (a build timeline)
+# timeline_tags: [content]
 # slug_suffix: "-{lang}"    # file name suffix for the non-primary language versions
 # front_matter:             # fields used to pair the translations of one post
 #   lang_field: post_lang

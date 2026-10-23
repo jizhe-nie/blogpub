@@ -38,6 +38,11 @@ DEFAULTS: Dict[str, Any] = {
     "style_notes": "",  # extra writing instructions for the model
     "style_file": None,  # or a path to a file with writing instructions
     "context_posts": 5,  # how many recent post titles to show the model
+    # Optional: also record every published post in the blog's build-timeline notes file
+    # (path relative to the blog, e.g. source/_data/timeline-notes.yml). None = off.
+    "timeline_notes": None,
+    "timeline_tags": ["content"],
+    "timeline_title_prefix": {"zh": "发布新文章：", "en": "New post: "},
     "timeout": 180,
 }
 

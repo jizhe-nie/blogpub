@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import __version__, gitops, images as imglib, safety
+from . import __version__, gitops, images as imglib, safety, timeline
 from .blog import Blog, BlogError, split_front_matter
 from .config import ConfigError, load_config
 from .generate import GenerationError, build_user_prompt, generate
@@ -34,6 +34,8 @@ provider: openai            # openai | anthropic | deepseek | kimi | qwen | olla
 # style_file: style.md
 
 # commit_message: "New post: {title}"
+# timeline_notes: source/_data/timeline-notes.yml   # also record each published post here (a build timeline)
+# timeline_tags: [content]
 # slug_suffix: "-{lang}"    # file name suffix for the non-primary language versions
 # front_matter:             # fields used to pair the translations of one post
 #   lang_field: post_lang
@@ -246,11 +248,13 @@ def cmd_publish(args: argparse.Namespace) -> int:
     mine = [str((blog.posts_dir / d.name).relative_to(blog.root)) for d in group]
     if image_dir.is_dir():
         mine.append(str(image_dir.relative_to(blog.root)))
+    notes_path = (blog.root / str(cfg["timeline_notes"])) if cfg.get("timeline_notes") else None
+    notes_rel = str(notes_path.relative_to(blog.root)) if notes_path else None
     # Catch problems before anything is moved.
     if not args.no_commit:
         if not gitops.is_repo(blog.root):
             raise die(f"{blog.root} is not a git repository (use --no-commit to only move the files)")
-        foreign = gitops.other_staged_files(blog.root, mine)
+        foreign = gitops.other_staged_files(blog.root, mine + ([notes_rel] if notes_rel else []))
         if foreign:
             raise die("these files are already staged and would be included:\n  " + "\n  ".join(foreign))
 
@@ -258,13 +262,36 @@ def cmd_publish(args: argparse.Namespace) -> int:
     for d, t in zip(group, titles):
         print(f"  {d.name}: {t}")
     print(f"Commit message: {message}")
+    if notes_rel:
+        print(f"Timeline: add a note for post:{args.slug} to {notes_rel}")
     print("Then: " + ("only move the drafts" if args.no_commit else ("commit (no push)" if args.no_push else "commit and push")))
     if not confirm("Continue?", args.yes):
         print("Cancelled.")
         return 1
 
+    # Collect what the timeline entry needs before the drafts are moved.
+    entry = None
+    if notes_path:
+        titles: Dict[str, str] = {}
+        bodies: Dict[str, str] = {}
+        for d in group:
+            fm, body = split_front_matter(texts[d.name])
+            lang = str(fm.get(fm_cfg["lang_field"]) or cfg["languages"][0])
+            titles[lang] = str(fm.get("title", d.stem))
+            bodies[lang] = body
+        entry = timeline.build_entry(titles, bodies, cfg)
+
     moved = blog.publish(group)
     print("Moved to source/_posts: " + ", ".join(m.name for m in moved))
+    if entry and notes_path:
+        try:
+            if timeline.append_note(notes_path, args.slug, entry):
+                mine.append(notes_rel)
+                print(f"Timeline note added: {notes_rel} (post:{args.slug})")
+            else:
+                print(f"Timeline note for post:{args.slug} already exists, left unchanged.")
+        except Exception as e:  # never lose a publish over the timeline
+            print(f"warning: could not update the timeline notes ({e}); the post itself is published.")
     if args.no_commit:
         return 0
     try:
