@@ -41,6 +41,8 @@ blogpub publish my-post                   # move to _posts, commit, push
 
 Try it without any API key: `blogpub new notes.md --provider mock --dry-run`.
 
+Every command and option is explained in the **[command reference](docs/usage.md)**.
+
 ## Providers
 
 `blogpub providers` lists them. Set the key in your shell, pick the provider in `blogpub.yml` (or `--provider`).
@@ -139,6 +141,8 @@ blogpub publish my-post                   # 移到 _posts，提交并推送
 ```
 
 没有 API Key 也能试用：`blogpub new notes.md --provider mock --dry-run`。
+
+每个命令和选项的详细说明见**[命令行使用手册](docs/usage.zh.md)**。
 
 ## 支持的模型
 

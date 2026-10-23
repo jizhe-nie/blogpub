@@ -133,3 +133,13 @@ def test_running_in_the_wrong_folder_explains_what_to_do(tmp_path, monkeypatch, 
         run(["drafts"])
     err = capsys.readouterr().err
     assert "cd into it first" in err and "--blog" in err
+
+
+def test_invalid_slug_option_is_rejected(blog, tmp_path, capsys):
+    notes = tmp_path / "n.md"
+    notes.write_text(NOTES, encoding="utf-8")
+    for bad in ("My Post", "../etc", "a_b", "-x"):
+        with pytest.raises(SystemExit):
+            run(["new", str(notes), "--blog", str(blog), "--provider", "mock", "-y", "--languages", "en", "--slug", bad])
+    assert "--slug may only contain" in capsys.readouterr().err
+    assert not (blog / "source" / "_drafts").exists()

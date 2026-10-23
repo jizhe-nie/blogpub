@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -164,6 +165,8 @@ def cmd_new(args: argparse.Namespace) -> int:
               f"{provider.name} ({provider.model}) ...")
         spec = generate(provider, prompt, languages, names, send_images)
         if args.slug:
+            if not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", args.slug):
+                raise die("--slug may only contain lowercase letters, digits and single hyphens, e.g. my-first-post")
             spec.slug = args.slug
 
         taken = blog.slug_taken(spec.slug)
@@ -334,7 +337,7 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--blog", help="path to the Hexo blog (overrides blog_dir)")
 
     s = sub.add_parser("providers", help="list supported LLM providers"); s.set_defaults(func=cmd_providers)
-    s = sub.add_parser("init", help="create a blogpub.yml here"); s.add_argument("--dir", default="."); s.set_defaults(func=cmd_init)
+    s = sub.add_parser("init", help="create a blogpub.yml here"); s.add_argument("--dir", default=".", help="folder to create blogpub.yml in (default: current folder)"); s.set_defaults(func=cmd_init)
 
     s = sub.add_parser("new", help="write a draft from your notes and images"); common(s)
     s.add_argument("notes", nargs="?", help="notes file, or - for stdin")
@@ -342,7 +345,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("-i", "--images", nargs="+", metavar="PATH", help="image files or folders")
     s.add_argument("--title", help="title hint"); s.add_argument("--category", help="category to use")
     s.add_argument("--tags", help="comma-separated tags to include"); s.add_argument("--slug", help="force the URL slug")
-    s.add_argument("--provider", choices=list(PRESETS)); s.add_argument("--model"); s.add_argument("--base-url", dest="base_url")
+    s.add_argument("--provider", choices=list(PRESETS), help="LLM provider, overrides blogpub.yml (see `blogpub providers`)")
+    s.add_argument("--model", help="model name, overrides the provider default")
+    s.add_argument("--base-url", dest="base_url", help="API address, for `custom` or a proxy")
     s.add_argument("--languages", help="override languages, e.g. zh,en or en")
     s.add_argument("--dry-run", action="store_true", help="show the result without writing anything")
     s.add_argument("--allow-secrets", action="store_true", help="send notes even if they look like they hold secrets")
@@ -351,14 +356,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("drafts", help="list drafts"); common(s); s.set_defaults(func=cmd_drafts)
     s = sub.add_parser("preview", help="run hexo server with drafts"); common(s)
-    s.add_argument("--port", type=int, default=4000); s.set_defaults(func=cmd_preview)
+    s.add_argument("--port", type=int, default=4000, help="port for hexo server (default: 4000)"); s.set_defaults(func=cmd_preview)
 
     s = sub.add_parser("publish", help="move a draft to _posts, commit and push"); common(s)
     s.add_argument("slug", help="draft slug (see `blogpub drafts`)")
     s.add_argument("-m", "--message", help="commit message")
-    s.add_argument("--no-push", action="store_true"); s.add_argument("--no-commit", action="store_true")
+    s.add_argument("--no-push", action="store_true", help="commit but do not push")
+    s.add_argument("--no-commit", action="store_true", help="only move the drafts into _posts; no git at all")
     s.add_argument("--force", action="store_true", help="publish even if secrets were detected")
-    s.add_argument("-y", "--yes", action="store_true"); s.set_defaults(func=cmd_publish)
+    s.add_argument("-y", "--yes", action="store_true", help="skip the confirmation question")
+    s.set_defaults(func=cmd_publish)
     return p
 
 
