@@ -62,10 +62,13 @@ def _merge(base: Dict[str, Any], extra: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def find_config(start: Path) -> Optional[Path]:
-    for name in CONFIG_NAMES:
-        candidate = start / name
-        if candidate.is_file():
-            return candidate
+    """Look for blogpub.yml in `start` and then its parent folders (like git does), so the
+    command also works from a sub-folder of the blog."""
+    for folder in [start, *start.parents]:
+        for name in CONFIG_NAMES:
+            candidate = folder / name
+            if candidate.is_file():
+                return candidate
     return None
 
 

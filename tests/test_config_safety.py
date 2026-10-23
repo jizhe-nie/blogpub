@@ -52,3 +52,12 @@ def test_example_config_file_matches_the_one_blogpub_init_writes():
     import yaml
     from blogpub.config import DEFAULTS
     assert set(yaml.safe_load(EXAMPLE_CONFIG)) <= set(DEFAULTS)  # every documented key really exists
+
+
+def test_config_is_found_from_a_subfolder(tmp_path):
+    (tmp_path / "blogpub.yml").write_text("languages: [en]\n", encoding="utf-8")
+    sub = tmp_path / "source" / "_posts"
+    sub.mkdir(parents=True)
+    cfg = load_config(cwd=sub)
+    assert cfg["languages"] == ["en"]
+    assert cfg["blog_dir"] == str(tmp_path.resolve())   # blog_dir '.' means the folder holding the config

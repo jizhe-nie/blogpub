@@ -86,6 +86,18 @@ def cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
+def _blog(cfg: Dict[str, Any]) -> Blog:
+    """Open the blog, with a helpful hint when the command was run in the wrong folder."""
+    try:
+        return Blog(cfg["blog_dir"])
+    except BlogError as e:
+        if cfg.get("_config_file"):
+            raise
+        raise BlogError(
+            f"{e}\nNo blogpub.yml was found here or in any parent folder, so the current folder was used.\n"
+            "Run blogpub inside your blog folder (cd into it first), or pass --blog /path/to/your/blog.")
+
+
 def _load(args: argparse.Namespace) -> Dict[str, Any]:
     cfg = load_config(getattr(args, "config", None))
     for key in ("provider", "model", "base_url"):
@@ -113,7 +125,7 @@ def _read_notes(args: argparse.Namespace) -> str:
 
 def cmd_new(args: argparse.Namespace) -> int:
     cfg = _load(args)
-    blog = Blog(cfg["blog_dir"])
+    blog = _blog(cfg)
     languages: List[str] = cfg["languages"]
     notes = _read_notes(args)
     if len(notes.strip()) < 20:
@@ -195,7 +207,7 @@ def cmd_new(args: argparse.Namespace) -> int:
 
 def cmd_drafts(args: argparse.Namespace) -> int:
     cfg = _load(args)
-    blog = Blog(cfg["blog_dir"])
+    blog = _blog(cfg)
     drafts = blog.drafts()
     if not drafts:
         print("No drafts.")
@@ -208,7 +220,7 @@ def cmd_drafts(args: argparse.Namespace) -> int:
 
 def cmd_preview(args: argparse.Namespace) -> int:
     cfg = _load(args)
-    blog = Blog(cfg["blog_dir"])
+    blog = _blog(cfg)
     local = blog.root / "node_modules" / ".bin" / "hexo"
     cmd = [str(local)] if local.exists() else ["npx", "hexo"]
     cmd += ["server", "--drafts", "-p", str(args.port)]
@@ -223,7 +235,7 @@ def cmd_preview(args: argparse.Namespace) -> int:
 
 def cmd_publish(args: argparse.Namespace) -> int:
     cfg = _load(args)
-    blog = Blog(cfg["blog_dir"])
+    blog = _blog(cfg)
     fm_cfg = cfg["front_matter"]
     group = blog.draft_group(args.slug, fm_cfg["translation_field"])
 

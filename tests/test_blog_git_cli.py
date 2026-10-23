@@ -125,3 +125,11 @@ def test_taxonomy_is_listed_per_language_so_english_posts_get_english_names(blog
     assert tax["en"] == (["Dev Notes"], ["Deep Learning"])
     # old.md has no language field: it counts for the primary language (zh)
     assert "开发笔记" in tax["zh"][0] and "Dev Notes" in tax["zh"][0] and "Dev Notes" not in tax["en"][0][1:]
+
+
+def test_running_in_the_wrong_folder_explains_what_to_do(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)          # no blogpub.yml and not a blog
+    with pytest.raises(SystemExit):
+        run(["drafts"])
+    err = capsys.readouterr().err
+    assert "cd into it first" in err and "--blog" in err
