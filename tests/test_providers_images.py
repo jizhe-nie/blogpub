@@ -21,7 +21,7 @@ class FakeResp:
 def test_openai_request_shape_and_image(monkeypatch):
     seen = {}
 
-    def fake_post(url, headers=None, json=None, timeout=None):
+    def fake_post(url, headers=None, json=None, timeout=None, **_):
         seen.update(url=url, headers=headers, payload=json)
         return FakeResp(200, {"choices": [{"message": {"content": "{}"}}]})
 
@@ -39,7 +39,7 @@ def test_openai_request_shape_and_image(monkeypatch):
 def test_anthropic_request_shape(monkeypatch):
     seen = {}
 
-    def fake_post(url, headers=None, json=None, timeout=None):
+    def fake_post(url, headers=None, json=None, timeout=None, **_):
         seen.update(url=url, headers=headers, payload=json)
         return FakeResp(200, {"content": [{"type": "text", "text": "hello"}]})
 
@@ -64,7 +64,7 @@ def test_retries_transient_errors_but_not_bad_requests(monkeypatch):
     monkeypatch.setenv("K", "secret-key-value")
     calls = []
 
-    def flaky(url, headers=None, json=None, timeout=None):
+    def flaky(url, headers=None, json=None, timeout=None, **_):
         calls.append(1)
         return FakeResp(429, {"error": "slow down"}) if len(calls) < 3 else FakeResp(200, {"choices": [{"message": {"content": "ok"}}]})
 

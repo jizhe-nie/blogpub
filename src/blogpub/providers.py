@@ -15,6 +15,7 @@ import json
 import os
 import re
 import time
+from urllib.parse import urlsplit
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -68,6 +69,16 @@ class ProviderError(Exception):
     pass
 
 
+_LOOPBACK = {"localhost", "127.0.0.1", "::1"}
+
+
+def _proxies_for(url: str):
+    """Requests to this computer (e.g. a local Ollama) must never go through an HTTP proxy,
+    even when the shell sets one without a NO_PROXY entry; everything else follows the environment."""
+    host = (urlsplit(url).hostname or "").lower()
+    return {"http": None, "https": None} if host in _LOOPBACK else None
+
+
 @dataclass
 class Image:
     """An image to show the model (already downscaled)."""
@@ -110,7 +121,7 @@ class Provider:
         last = ""
         for attempt in range(3):
             try:
-                resp = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+                resp = requests.post(url, headers=headers, json=payload, timeout=self.timeout, proxies=_proxies_for(url))
             except requests.RequestException as e:
                 last = self._redact(str(e))
             else:

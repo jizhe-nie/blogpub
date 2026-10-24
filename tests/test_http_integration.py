@@ -20,7 +20,8 @@ requests_seen = []
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["content-length"])))
-        requests_seen.append((self.path, dict(self.headers), body))
+        # header names are case-insensitive, and a proxy may change their case, so compare in lower case
+        requests_seen.append((self.path, {k.lower(): v for k, v in self.headers.items()}, body))
         if self.path.endswith("/chat/completions"):
             out = {"choices": [{"message": {"content": "```json\n" + json.dumps(REPLY) + "\n```"}}]}
         elif self.path.endswith("/v1/messages"):
@@ -39,7 +40,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 @pytest.fixture
-def server():
+def server(monkeypatch):
+    # Never let the developer's own proxy settings influence a test that talks to 127.0.0.1.
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
+    monkeypatch.setenv("no_proxy", "127.0.0.1,localhost")
     srv = HTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     requests_seen.clear()
@@ -79,3 +83,24 @@ def test_anthropic_endpoint_with_vision_sends_the_image(server, blog, png, tmp_p
     blocks = body["messages"][0]["content"]
     assert blocks[0]["type"] == "image" and blocks[0]["source"]["media_type"] == "image/jpeg"
     assert blocks[-1]["type"] == "text"
+
+
+def test_local_endpoints_bypass_a_misconfigured_proxy(server, blog, png, tmp_path, monkeypatch):
+    """A proxy variable without NO_PROXY used to send even localhost traffic through the proxy."""
+    for name in ("NO_PROXY", "no_proxy"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:9")    # nothing listens here: any use of it fails
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:9")
+    monkeypatch.setenv("LLM_API_KEY", "k")
+    notes = tmp_path / "n.md"
+    notes.write_text(NOTES, encoding="utf-8")
+    assert cli.main(["new", str(notes), "-i", str(png), "--blog", str(blog), "--provider", "custom",
+                     "--base-url", server, "--model", "m", "--languages", "en", "-y"]) == 0
+    assert requests_seen[0][1]["authorization"] == "Bearer k"
+
+
+def test_proxy_policy_by_host():
+    from blogpub.providers import _proxies_for
+    assert _proxies_for("http://localhost:11434/v1/chat/completions") == {"http": None, "https": None}
+    assert _proxies_for("http://127.0.0.1:8000/x") == {"http": None, "https": None}
+    assert _proxies_for("https://api.deepseek.com/chat/completions") is None   # follows the environment
